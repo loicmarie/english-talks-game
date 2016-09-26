@@ -1,6 +1,8 @@
+*** TO UPDATE ***
 # Specificiations
 
 ## Concept
+
 
 Le concept est d'apprendre et/ou s'entraîner en anglais. Le but de l'application est de construire une conversation entre deux personnes.
 
