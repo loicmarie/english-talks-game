@@ -27,7 +27,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   <div class="card">
 
     <h1>Select a theme</h1>
-    <paper-input id="themeInput" label="Search a theme..." auto-validate allowed-pattern="[a-zA-Z]\s*" on-input="filter"></paper-input>
+    <paper-input id="themeInput" label="Search a theme..." on-input="filter"></paper-input>
 
     <template if="{{noFilter}}" is="dom-if">
       <h1>Themes</h1>
@@ -38,7 +38,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </template>
 
     <template if="{{hasThemes}}" is="dom-if">
-      <h1>Exact Matches</h1>
+      <h1>Results</h1>
       <template is="dom-repeat" items="[[matchedThemes]]">
         <span>{{item.theme}}</span>
         <br>
@@ -46,7 +46,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </template>
 
     <template if="{{hasSuggestions}}" is="dom-if">
-      <h1>Close matches</h1>
+      <h1>Suggestions</h1>
       <template id="themeSuggestionTemplate" is="dom-repeat" items="[[suggestedThemes]]">
         <span>{{item.theme}}</span>
         <br>
@@ -86,42 +86,60 @@ Polymer({
   },
   filter : function()
   {
-    // get input
     var input = this.$.themeInput.value;
-
     this.noFilter = input.length == 0;
+    this.hasThemes = false;
+    this.hasSuggestions = false;
+    this.matchedThemes = [];
+    this.suggestedThemes = [];
+
+    // Start filtering
     if(!this.noFilter)
     {
-      this.hasThemes = false;
-      this.hasSuggestions = false;
-      this.matchedThemes = [];
-      this.suggestedThemes = [];
-
       // if input not empty
       if(input)
       {
+        var inputSplit = input.split(" ");
+
+        // For each talks
         for(var i = 0 ; i < this.talks.length; i++)
         {
-          // Split theme in case it is a sentence
+
+          // For each words of the theme
           var themeSplit = this.talks[i].theme.split(" ");
           for(var j = 0 ; j < themeSplit.length ; j++)
           {
-            // look for exact match in response
-            if(themeSplit[j] == input)
+
+            // For each words of the input
+            var found = false;
+            for(var k = 0 ; k < inputSplit.length; k++)
             {
-              this.hasThemes = true;
-              this.push('matchedThemes',this.talks[i]);
-            }
-            // Or look for close matches using edit distance
-            else if(normalizedLevenshtein(themeSplit[j],input) > 0.6)
-            {
-              this.hasSuggestions = true;
-              this.push('suggestedThemes', this.talks[i]);
-            }
-          }
-        }
-      }
-    }
+
+              // look for exact match in response (case insensitive)
+              if(themeSplit[j].toLowerCase() == inputSplit[k].toLowerCase())
+              {
+                this.hasThemes = true;
+                this.push('matchedThemes',this.talks[i]);
+                found = true;
+                break;
+              }
+
+              // Or look for close matches using edit distance
+              else if(normalizedLevenshtein(themeSplit[j],input) > 0.6)
+              {
+                this.hasSuggestions = true;
+                this.push('suggestedThemes', this.talks[i]);
+                found = true;
+                break;
+              }
+            }// end for input words
+
+            if(found) break;
+
+          }// end for theme words
+        }// end for talks
+      }// end filter mode
+    }// end function
   },
   ready: function () {
     this.$.getTheme.generateRequest();
