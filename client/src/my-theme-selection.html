@@ -27,12 +27,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   <div class="card">
 
     <h1>Select a theme</h1>
-    <paper-input id="themeInput" label="Theme..." auto-validate allowed-pattern="[a-zA-Z]\s*" on-input="search"></paper-input>
+    <paper-input id="themeInput" label="Search a theme..." auto-validate allowed-pattern="[a-zA-Z]\s*" on-input="filter"></paper-input>
+
+    <template if="{{noFilter}}" is="dom-if">
+      <h1>Themes</h1>
+      <template is="dom-repeat" items="[[talks]]">
+        <span>{{item.theme}}</span>
+        <br>
+      </template>
+    </template>
 
     <template if="{{hasThemes}}" is="dom-if">
       <h1>Exact Matches</h1>
-      <template is="dom-repeat" items="[[themes]]">
+      <template is="dom-repeat" items="[[matchedThemes]]">
         <span>{{item.theme}}</span>
+        <br>
       </template>
     </template>
 
@@ -40,6 +49,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <h1>Close matches</h1>
       <template id="themeSuggestionTemplate" is="dom-repeat" items="[[suggestedThemes]]">
         <span>{{item.theme}}</span>
+        <br>
       </template>
     </template>
 
@@ -49,7 +59,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     id="getTheme"
     url="http://localhost:8081/talks"
     handle-as="json"
-    on-response="handleResponse"
+    on-response="handleTalksResponse"
     debounce-duration="300">
 </iron-ajax>
 </template>
@@ -58,7 +68,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 Polymer({
   is: 'my-theme-selection',
   properties: {
-    themes: {
+    talks:{
+      type: Array
+    },
+    matchedThemes: {
       type: Array
     },
     hasThemes: {
@@ -71,52 +84,51 @@ Polymer({
       type : Boolean
     }
   },
-  search : function()
+  filter : function()
   {
-    this.$.getTheme.generateRequest();
+    // get input
+    var input = this.$.themeInput.value;
+
+    this.noFilter = input.length == 0;
+    if(!this.noFilter)
+    {
+      this.hasThemes = false;
+      this.hasSuggestions = false;
+      this.matchedThemes = [];
+      this.suggestedThemes = [];
+
+      // if input not empty
+      if(input)
+      {
+        for(var i = 0 ; i < this.talks.length; i++)
+        {
+          // Split theme in case it is a sentence
+          var themeSplit = this.talks[i].theme.split(" ");
+          for(var j = 0 ; j < themeSplit.length ; j++)
+          {
+            // look for exact match in response
+            if(themeSplit[j] == input)
+            {
+              this.hasThemes = true;
+              this.push('matchedThemes',this.talks[i]);
+            }
+            // Or look for close matches using edit distance
+            else if(normalizedLevenshtein(themeSplit[j],input) > 0.6)
+            {
+              this.hasSuggestions = true;
+              this.push('suggestedThemes', this.talks[i]);
+            }
+          }
+        }
+      }
+    }
   },
   ready: function () {
     this.$.getTheme.generateRequest();
   },
-  handleResponse: function (data) {
-    this.hasThemes = false;
-    this.hasSuggestions = false;
-    this.themes = [];
-    this.suggestedThemes = [];
-
-    var response = data.detail.response;
-
-    // get input
-    var input = this.$.themeInput.value;
-
-    // if input not empty
-    if(input)
-    {
-      for(var i = 0 ; i < response.length; i++)
-      {
-        // Split theme in case it is a sentence
-        var themeSplit = response[i].theme.split(" ");
-        for(var j = 0 ; j < themeSplit.length ; j++)
-        {
-          // look for exact match in response
-          if(themeSplit[j] == input)
-          {
-            this.hasThemes = true;
-            this.themes[this.themes.length] = response[i];
-          // Or look for close matches using edit distance
-          }else if(normalizedLevenshtein(themeSplit[j],input) > 0.6)
-          {
-            console.log("Close to input : "+themeSplit[j]+" ;; "+input);
-            this.hasSuggestions = true;
-            this.push('suggestedThemes', response[i]);
-          }
-        }
-      }
-      console.log("Suggestions");
-      console.log(this.suggestedThemes);
-
-
-    }
+  handleTalksResponse: function (data) {
+    this.talks = data.detail.response;
+    this.noFilter = true;
   }
 });
 </script>
@@ -125,14 +137,7 @@ Polymer({
 <script>
 function normalizedLevenshtein(a,b)
 {
-  var editDistance = levenshtein(a,b);
-  var maxLength = max(a.length,b.length);
-  var normalizedEditDistance = 1 - editDistance/maxLength;
-
-  console.log("Edit distance : "+editDistance);
-  console.log("Max length : "+maxLength);
-  console.log("Normalized : "+normalizedEditDistance);
-  return normalizedEditDistance;
+  return 1 - levenshtein(a,b)/max(a.length,b.length);
 }
 
 function max(a,b)
@@ -143,6 +148,10 @@ function max(a,b)
 function levenshtein(a, b){
   if(a.length == 0) return b.length;
   if(b.length == 0) return a.length;
+
+  // case insensitive
+  a = a.toLowerCase();
+  b = b.toLowerCase();
 
   var matrix = [];
 
