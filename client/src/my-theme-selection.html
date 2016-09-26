@@ -12,146 +12,154 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="shared-styles.html">
-
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
 
 
 <dom-module id="my-theme-selection">
   <template>
-  <style include="shared-styles">
-  :host {
-    display: block;
-    padding: 10px;
-  }
-  </style>
-
-  <div class="card">
-
-    <h1>Select a theme</h1>
-    <paper-input id="themeInput" label="Search a theme..." on-input="filter"></paper-input>
-
-    <template if="{{noFilter}}" is="dom-if">
-      <h1>Themes</h1>
-      <template is="dom-repeat" items="[[talks]]">
-        <span>{{item.theme}}</span>
-        <br>
-      </template>
-    </template>
-
-    <template if="{{hasThemes}}" is="dom-if">
-      <h1>Results</h1>
-      <template is="dom-repeat" items="[[matchedThemes]]">
-        <span>{{item.theme}}</span>
-        <br>
-      </template>
-    </template>
-
-    <template if="{{hasSuggestions}}" is="dom-if">
-      <h1>Suggestions</h1>
-      <template id="themeSuggestionTemplate" is="dom-repeat" items="[[suggestedThemes]]">
-        <span>{{item.theme}}</span>
-        <br>
-      </template>
-    </template>
-
-  </div>
-
-  <iron-ajax
-    id="getTheme"
-    url="http://localhost:8081/talks"
-    handle-as="json"
-    on-response="handleTalksResponse"
-    debounce-duration="300">
-</iron-ajax>
-</template>
-
-<script>
-Polymer({
-  is: 'my-theme-selection',
-  properties: {
-    talks:{
-      type: Array
-    },
-    matchedThemes: {
-      type: Array
-    },
-    hasThemes: {
-      type : Boolean
-    },
-    suggestedThemes: {
-      type: Array
-    },
-    hasSuggestions: {
-      type : Boolean
+    <style include="shared-styles">
+    :host {
+      display: block;
+      padding: 10px;
     }
-  },
-  filter : function()
-  {
-    var input = this.$.themeInput.value;
-    this.noFilter = input.length == 0;
-    this.hasThemes = false;
-    this.hasSuggestions = false;
-    this.matchedThemes = [];
-    this.suggestedThemes = [];
+    </style>
 
-    // Start filtering
-    if(!this.noFilter)
+    <button type="button" class="btn btn-primary">Primary</button>
+
+    <div class="card">
+      <paper-input id="themeInput" label="Search a theme..." on-input="filter"></paper-input>
+    </div>
+
+    <div class="card">
+      <template if="{{noFilter}}" is="dom-if">
+        <h1>Themes</h1>
+        <template is="dom-repeat" items="[[talks]]">
+
+          <!-- BOOSTRAP TRY HERE -->
+          <button type="button" class="btn btn-primary">{{item.theme}}</button>
+          <!-- -->
+
+          <br>
+        </template>
+      </template>
+
+      <template if="{{hasThemes}}" is="dom-if">
+        <h1>Results</h1>
+        <template is="dom-repeat" items="[[matchedThemes]]">
+          <span>{{item.theme}}</span>
+          <br>
+        </template>
+      </template>
+
+      <template if="{{hasSuggestions}}" is="dom-if">
+        <h1>Suggestions</h1>
+        <template id="themeSuggestionTemplate" is="dom-repeat" items="[[suggestedThemes]]">
+          <span>{{item.theme}}</span>
+          <br>
+        </template>
+      </template>
+
+    </div>
+
+    <iron-ajax
+      id="getTheme"
+      url="http://localhost:8081/talks"
+      handle-as="json"
+      on-response="handleTalksResponse"
+      debounce-duration="300">
+    </iron-ajax>
+  </template>
+
+  <script>
+  Polymer({
+    is: 'my-theme-selection',
+    properties: {
+      talks:{
+        type: Array
+      },
+      matchedThemes: {
+        type: Array
+      },
+      hasThemes: {
+        type : Boolean
+      },
+      suggestedThemes: {
+        type: Array
+      },
+      hasSuggestions: {
+        type : Boolean
+      }
+    },
+    filter : function()
     {
-      // if input not empty
-      if(input)
+      var input = this.$.themeInput.value;
+      this.noFilter = input.length == 0;
+      this.hasThemes = false;
+      this.hasSuggestions = false;
+      this.matchedThemes = [];
+      this.suggestedThemes = [];
+
+      // Start filtering
+      if(!this.noFilter)
       {
-        var inputSplit = input.split(" ");
-
-        // For each talks
-        for(var i = 0 ; i < this.talks.length; i++)
+        // if input not empty
+        if(input)
         {
+          var inputSplit = input.split(" ");
 
-          // For each words of the theme
-          var themeSplit = this.talks[i].theme.split(" ");
-          for(var j = 0 ; j < themeSplit.length ; j++)
+          // For each talks
+          for(var i = 0 ; i < this.talks.length; i++)
           {
 
-            // For each words of the input
-            var found = false;
-            for(var k = 0 ; k < inputSplit.length; k++)
+            // For each words of the theme
+            var themeSplit = this.talks[i].theme.split(" ");
+            for(var j = 0 ; j < themeSplit.length ; j++)
             {
 
-              // look for exact match in response (case insensitive)
-              if(themeSplit[j].toLowerCase() == inputSplit[k].toLowerCase())
+              // For each words of the input
+              var found = false;
+              for(var k = 0 ; k < inputSplit.length; k++)
               {
-                this.hasThemes = true;
-                this.push('matchedThemes',this.talks[i]);
-                found = true;
-                break;
-              }
 
-              // Or look for close matches using edit distance
-              else if(normalizedLevenshtein(themeSplit[j],input) > 0.6)
-              {
-                this.hasSuggestions = true;
-                this.push('suggestedThemes', this.talks[i]);
-                found = true;
-                break;
-              }
-            }// end for input words
+                // look for exact match in response (case insensitive)
+                if(themeSplit[j].toLowerCase() == inputSplit[k].toLowerCase())
+                {
+                  this.hasThemes = true;
+                  this.push('matchedThemes',this.talks[i]);
+                  found = true;
+                  break;
+                }
 
-            if(found) break;
+                // Or look for close matches using edit distance
+                else if(normalizedLevenshtein(themeSplit[j],input) > 0.6)
+                {
+                  this.hasSuggestions = true;
+                  this.push('suggestedThemes', this.talks[i]);
+                  found = true;
+                  break;
+                }
+              }// end for input words
 
-          }// end for theme words
-        }// end for talks
-      }// end filter mode
-    }// end function
-  },
-  ready: function () {
-    this.$.getTheme.generateRequest();
-  },
-  handleTalksResponse: function (data) {
-    this.talks = data.detail.response;
-    this.noFilter = true;
-  }
-});
-</script>
+              if(found) break;
 
+            }// end for theme words
+          }// end for talks
+        }// end filter mode
+      }// end function
+    },
+    ready: function () {
+      this.$.getTheme.generateRequest();
+    },
+    handleTalksResponse: function (data) {
+      this.talks = data.detail.response;
+      this.noFilter = true;
+    }
+  });
+  </script>
 </dom-module>
+
+
 <script>
 function normalizedLevenshtein(a,b)
 {
